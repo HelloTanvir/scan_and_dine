@@ -63,7 +63,7 @@ public class UserService {
     @Transactional(readOnly = true)
     public Page<UserResponseDto> getAllUsers(String username, String email, User.UserRole role,
                                            User.UserStatus status, Pageable pageable) {
-        log.info("Fetching users with filters and pagination");
+        log.info("Fetching users with filters and pagination (excluding admin users)");
         return findUsersWithFilters(username, email, role, status, pageable);
     }
 

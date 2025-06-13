@@ -23,6 +23,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     boolean existsByEmail(String email);
     
     @Query(value = "SELECT * FROM users u WHERE " +
+           "u.role != 'ADMIN' AND " +
            "(:username IS NULL OR UPPER(u.username) ILIKE UPPER('%' || :username || '%')) AND " +
            "(:email IS NULL OR UPPER(u.email) ILIKE UPPER('%' || :email || '%')) AND " +
            "(:role IS NULL OR u.role = :role) AND " +
