@@ -2,6 +2,7 @@
 
 import React from 'react';
 import DashboardLayout from "@/components/layout/dashboard-layout";
+import { ProtectedRoute } from '@/components/auth/protected-route';
 import { ErrorBoundary } from '@/components/common/error-boundary';
 import { LoadingSpinner } from '@/components/common/loading-spinner';
 import { StatsCard } from '@/features/dashboard/components/stats-card';
@@ -111,8 +112,10 @@ function DashboardContent() {
 
 export default function DashboardPage() {
   return (
-    <DashboardLayout>
-      <DashboardContent />
-    </DashboardLayout>
+    <ProtectedRoute requiredRoles={['ADMIN']}>
+      <DashboardLayout>
+        <DashboardContent />
+      </DashboardLayout>
+    </ProtectedRoute>
   );
 }

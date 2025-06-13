@@ -1,11 +1,15 @@
+// API base URL
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api';
+
 // API endpoints
 export const API_ENDPOINTS = {
-  ORDERS: '/api/orders',
-  TABLES: '/api/tables',
-  MENU: '/api/menu',
-  DASHBOARD: '/api/dashboard',
-  AUTH: '/api/auth',
-  TABLES_QR: '/api/tables/qr-codes',
+  ORDERS: `${API_BASE_URL}/orders`,
+  TABLES: `${API_BASE_URL}/tables`,
+  MENU: `${API_BASE_URL}/menu`,
+  DASHBOARD: `${API_BASE_URL}/dashboard`,
+  AUTH: `${API_BASE_URL}/auth`,
+  USERS: `${API_BASE_URL}/users`,
+  TABLES_QR: `${API_BASE_URL}/tables/qr-codes`,
 } as const;
 
 // Order status configurations
@@ -73,7 +77,19 @@ export const NAVIGATION_ITEMS = [
     href: '/tables',
     icon: 'Table2',
   },
+  {
+    name: 'Users',
+    href: '/users',
+    icon: 'Users',
+  },
 ] as const;
+
+// Role-based default routes
+export const ROLE_DEFAULT_ROUTES = {
+  ADMIN: '/dashboard',
+  MANAGER: '/tables',
+  STAFF: '/kitchen',
+} as const;
 
 // App metadata
 export const APP_METADATA = {

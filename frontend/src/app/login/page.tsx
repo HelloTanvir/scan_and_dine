@@ -1,36 +1,58 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { QrCode, Lock, User, Shield, ChefHat } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { QrCode, Lock, User, AlertCircle } from "lucide-react";
+import { useAuth } from "@/contexts/auth.context";
+import { LoadingSpinner } from "@/components/common/loading-spinner";
+import { authService } from "@/lib/services/auth.service";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("admin"); // Default to admin
-  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { login, isAuthenticated, isLoading: authLoading, user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated && !authLoading && user) {
+      const redirect = searchParams.get('redirect');
+      if (redirect) {
+        router.push(redirect);
+      } else {
+        const defaultRoute = authService.getDefaultRouteForRole(user.role);
+        router.push(defaultRoute);
+      }
+    }
+  }, [isAuthenticated, authLoading, user, router, searchParams]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setError(null);
+    setIsSubmitting(true);
 
-    // Simulate login process
-    setTimeout(() => {
-      setIsLoading(false);
-      // Redirect based on role
-      if (role === "kitchen") {
-        router.push("/kitchen");
-      } else {
-        router.push("/dashboard");
-      }
-    }, 1500);
+    try {
+      await login({ email, password });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center p-4">
@@ -59,41 +81,13 @@ const LoginPage = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
-              {/* Role Selection Buttons */}
-              <div className="space-y-2">
-                <Label className="text-green-800">Select Your Role</Label>
-                <div className="grid grid-cols-2 gap-3">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setRole("admin")}
-                    className={cn(
-                      "h-16 flex flex-col items-center justify-center space-y-1 border-2 transition-all",
-                      role === "admin"
-                        ? "border-green-600 bg-green-50 text-green-700"
-                        : "border-green-200 hover:border-green-300 text-green-600"
-                    )}
-                  >
-                    <Shield className="h-5 w-5" />
-                    <span className="text-sm font-medium">Admin</span>
-                  </Button>
-                  
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setRole("kitchen")}
-                    className={cn(
-                      "h-16 flex flex-col items-center justify-center space-y-1 border-2 transition-all",
-                      role === "kitchen"
-                        ? "border-green-600 bg-green-50 text-green-700"
-                        : "border-green-200 hover:border-green-300 text-green-600"
-                    )}
-                  >
-                    <ChefHat className="h-5 w-5" />
-                    <span className="text-sm font-medium">Kitchen Staff</span>
-                  </Button>
+              {/* Error Message */}
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5" />
+                  <span className="text-sm">{error}</span>
                 </div>
-              </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-green-800">Email</Label>
@@ -127,39 +121,21 @@ const LoginPage = () => {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <input
-                    id="remember"
-                    type="checkbox"
-                    className="rounded border-green-300 text-green-600 focus:ring-green-500"
-                  />
-                  <Label htmlFor="remember" className="text-sm text-green-700">
-                    Remember me
-                  </Label>
-                </div>
-                <a href="#" className="text-sm text-green-600 hover:text-green-500">
-                  Forgot password?
-                </a>
-              </div>
-
               <Button
                 type="submit"
                 className="w-full bg-green-600 hover:bg-green-700 text-white"
-                disabled={isLoading}
+                disabled={isSubmitting}
               >
-                {isLoading ? "Signing in..." : "Sign In"}
+                {isSubmitting ? (
+                  <>
+                    <LoadingSpinner size="sm" className="mr-2" />
+                    Signing in...
+                  </>
+                ) : (
+                  "Sign In"
+                )}
               </Button>
             </form>
-
-            <div className="mt-6 text-center">
-              <p className="text-sm text-green-600">
-                Need help?{" "}
-                <a href="#" className="font-medium text-green-700 hover:text-green-600">
-                  Contact Support
-                </a>
-              </p>
-            </div>
           </CardContent>
         </Card>
       </div>

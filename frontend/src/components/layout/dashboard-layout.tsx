@@ -3,6 +3,8 @@
 import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/contexts/auth.context";
+import { useTokenRefresh } from "@/lib/hooks/use-token-refresh";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,13 +16,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { NAVIGATION_ITEMS } from "@/lib/constants";
+import { NAVIGATION_ITEMS, ROLE_DEFAULT_ROUTES } from "@/lib/constants";
 import {
   LayoutDashboard,
   QrCode,
   ChefHat,
   BarChart3,
   Table2,
+  Users,
   LogOut,
   ChevronLeft,
   ChevronRight,
@@ -32,6 +35,7 @@ const iconMap = {
   ChefHat,
   BarChart3,
   Table2,
+  Users,
 } as const;
 
 interface NavItemProps {
@@ -76,27 +80,45 @@ const DashboardLayout = React.memo(function DashboardLayout({
 }: DashboardLayoutProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
+  const { user, hasPermission, logout } = useAuth();
+  
+  useTokenRefresh();
 
   const navigationItems = useMemo(() => 
-    NAVIGATION_ITEMS.map(item => ({
-      ...item,
-      isActive: pathname === item.href,
-    })), 
-    [pathname]
+    NAVIGATION_ITEMS
+      .filter(item => hasPermission(item.href))
+      .map(item => ({
+        ...item,
+        isActive: pathname === item.href,
+      })), 
+    [pathname, hasPermission]
   );
+
+  const primaryAction = useMemo(() => {
+    if (!user) return null;
+    
+    const defaultRoute = ROLE_DEFAULT_ROUTES[user.role];
+    const item = NAVIGATION_ITEMS.find(item => item.href === defaultRoute);
+    
+    if (!item) return null;
+    
+    return {
+      ...item,
+      isPrimary: true,
+      isActive: pathname === item.href,
+    };
+  }, [user, pathname]);
 
   const toggleSidebar = () => setIsCollapsed(!isCollapsed);
 
   return (
     <div className="flex min-h-screen bg-green-50 dark:bg-green-950">
-      {/* Sidebar */}
       <aside
         className={cn(
           "flex flex-col border-r border-green-200 dark:border-green-800 bg-white dark:bg-green-900 transition-all duration-300 ease-in-out",
           isCollapsed ? "w-[70px]" : "w-[240px]"
         )}
       >
-        {/* Logo */}
         <div className="flex items-center h-16 px-4 border-b border-green-200 dark:border-green-800">
           <div className="flex items-center gap-2">
             <div className="rounded-full bg-green-600 p-1">
@@ -110,7 +132,6 @@ const DashboardLayout = React.memo(function DashboardLayout({
           </div>
         </div>
 
-        {/* Navigation */}
         <nav className="flex flex-col gap-1 p-2 flex-1">
           {navigationItems.map((item) => (
             <NavItem
@@ -124,7 +145,6 @@ const DashboardLayout = React.memo(function DashboardLayout({
           ))}
         </nav>
 
-        {/* Toggle button */}
         <div className="p-2 border-t border-green-200 dark:border-green-800">
           <Button
             variant="outline"
@@ -138,30 +158,59 @@ const DashboardLayout = React.memo(function DashboardLayout({
         </div>
       </aside>
 
-      {/* Main content */}
       <div className="flex flex-col flex-1">
-        {/* Header */}
         <header className="flex h-16 items-center gap-4 border-b border-green-200 dark:border-green-800 bg-white dark:bg-green-900 px-6">
           <h1 className="text-xl font-semibold text-green-900 dark:text-green-50">
-            Restaurant Dashboard
+            {(() => {
+              const currentPage = navigationItems.find(item => item.isActive);
+              return currentPage ? currentPage.name : 'Restaurant Dashboard';
+            })()}
           </h1>
-          <div className="ml-auto flex items-center gap-4">
+          
+          {/* Primary Action Button */}
+          {primaryAction && !primaryAction.isActive && (
+            <div className="ml-auto mr-4">
+              <Link href={primaryAction.href}>
+                <Button 
+                  variant="default" 
+                  size="sm"
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  Go to {primaryAction.name}
+                </Button>
+              </Link>
+            </div>
+          )}
+          
+          <div className={cn("flex items-center gap-4", primaryAction && !primaryAction.isActive ? "" : "ml-auto")}>
+          
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-9 w-9 rounded-full" size="icon">
                   <Avatar>
-                    <AvatarImage src="/placeholder-avatar.jpg" alt="Admin" />
-                    <AvatarFallback className="bg-green-200 text-green-800">AD</AvatarFallback>
+                    <AvatarImage src={user?.avatar} alt={user?.name || 'User'} />
+                    <AvatarFallback className="bg-green-200 text-green-800">
+                      {user?.name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
+                    </AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Admin User</DropdownMenuLabel>
+                <DropdownMenuLabel>
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">{user?.name || 'User'}</p>
+                    <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
+                    <p className="text-xs leading-none text-green-600 capitalize">{user?.role}</p>
+                  </div>
+                </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>Profile</DropdownMenuItem>
                 <DropdownMenuItem>Settings</DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-red-500 flex items-center gap-2">
+                <DropdownMenuItem 
+                  className="text-red-500 flex items-center gap-2"
+                  onClick={logout}
+                >
                   <LogOut className="h-4 w-4" /> Logout
                 </DropdownMenuItem>
               </DropdownMenuContent>

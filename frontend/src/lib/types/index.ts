@@ -1,3 +1,9 @@
+// Re-export auth types
+export * from './auth';
+
+// Re-export user types
+export * from './user';
+
 // Error handling types
 export interface AppError {
   message: string;

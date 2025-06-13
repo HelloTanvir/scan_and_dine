@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ErrorBoundary } from "@/components/common/error-boundary";
+import { AuthProvider } from "@/contexts/auth.context";
 import { APP_METADATA } from "@/lib/constants";
 import "./globals.css";
 
@@ -63,9 +64,11 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
-        <ErrorBoundary>
-          {children}
-        </ErrorBoundary>
+        <AuthProvider>
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
+        </AuthProvider>
       </body>
     </html>
   );

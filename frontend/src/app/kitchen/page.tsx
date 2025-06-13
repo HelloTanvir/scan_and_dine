@@ -2,6 +2,7 @@
 
 import React from "react";
 import DashboardLayout from "@/components/layout/dashboard-layout";
+import { ProtectedRoute } from '@/components/auth/protected-route';
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ErrorBoundary } from '@/components/common/error-boundary';
@@ -179,10 +180,12 @@ function KitchenContent() {
 
 export default function KitchenPage() {
   return (
-    <DashboardLayout>
-      <ErrorBoundary>
-        <KitchenContent />
-      </ErrorBoundary>
-    </DashboardLayout>
+    <ProtectedRoute requiredRoles={['ADMIN', 'MANAGER', 'STAFF']}>
+      <DashboardLayout>
+        <ErrorBoundary>
+          <KitchenContent />
+        </ErrorBoundary>
+      </DashboardLayout>
+    </ProtectedRoute>
   );
 }

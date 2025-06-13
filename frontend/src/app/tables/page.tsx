@@ -2,25 +2,58 @@
 
 import React, { useState } from "react";
 import DashboardLayout from "@/components/layout/dashboard-layout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ProtectedRoute } from "@/components/auth/protected-route";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ErrorBoundary } from '@/components/common/error-boundary';
-import { LoadingSpinner } from '@/components/common/loading-spinner';
-import { useTablesManagement, useReservations, usePayments, useTableOrders, useTableFilters } from '@/features/tables/hooks/use-tables';
-import { 
-  Download, 
-  Printer, 
-  QrCode, 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Users, 
+import { ErrorBoundary } from "@/components/common/error-boundary";
+import { LoadingSpinner } from "@/components/common/loading-spinner";
+import {
+  useTablesManagement,
+  useReservations,
+  usePayments,
+  useTableOrders,
+  useTableFilters,
+} from "@/features/tables/hooks/use-tables";
+import {
+  Download,
+  Printer,
+  QrCode,
+  Plus,
+  Edit,
+  Trash2,
+  Users,
   Clock,
   MapPin,
   Search,
@@ -28,28 +61,43 @@ import {
   Eye,
   CheckCircle,
   XCircle,
-  AlertCircle
+  AlertCircle,
 } from "lucide-react";
-import { Table as TableType, CreateTableData, UpdateTableData, TableStatus } from '@/lib/types';
-import { cn } from '@/lib/utils';
+import {
+  Table as TableType,
+  CreateTableData,
+  UpdateTableData,
+  TableStatus,
+} from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 // Simple Badge component
-function Badge({ children, className }: { children: React.ReactNode; className?: string }) {
+function Badge({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <span className={cn('inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium', className)}>
+    <span
+      className={cn(
+        "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
+        className
+      )}
+    >
       {children}
     </span>
   );
 }
 
-// Status badge component
-function StatusBadge({ status }: { status: TableType['status'] }) {
+function StatusBadge({ status }: { status: TableType["status"] }) {
   const statusConfig = {
-    available: { color: 'bg-green-100 text-green-800', icon: CheckCircle },
-    occupied: { color: 'bg-red-100 text-red-800', icon: Users },
-    reserved: { color: 'bg-blue-100 text-blue-800', icon: Clock },
-    cleaning: { color: 'bg-yellow-100 text-yellow-800', icon: AlertCircle },
-    maintenance: { color: 'bg-gray-100 text-gray-800', icon: XCircle },
+    available: { color: "bg-green-100 text-green-800", icon: CheckCircle },
+    occupied: { color: "bg-red-100 text-red-800", icon: Users },
+    reserved: { color: "bg-blue-100 text-blue-800", icon: Clock },
+    cleaning: { color: "bg-yellow-100 text-yellow-800", icon: AlertCircle },
+    maintenance: { color: "bg-gray-100 text-gray-800", icon: XCircle },
   };
 
   const config = statusConfig[status];
@@ -64,7 +112,13 @@ function StatusBadge({ status }: { status: TableType['status'] }) {
 }
 
 // QR Code preview component
-function QRCodePreview({ qrCodeData, tableName }: { qrCodeData: string | null; tableName: string }) {
+function QRCodePreview({
+  qrCodeData,
+  tableName,
+}: {
+  qrCodeData: string | null;
+  tableName: string;
+}) {
   if (!qrCodeData) {
     return (
       <div className="flex items-center justify-center h-64 border-2 border-dashed border-gray-300 rounded-lg">
@@ -79,7 +133,9 @@ function QRCodePreview({ qrCodeData, tableName }: { qrCodeData: string | null; t
   return (
     <div className="text-center space-y-4">
       <div className="bg-white p-4 rounded-lg border inline-block">
-        <div className="text-lg font-semibold text-green-900 mb-2">Scan & Dine</div>
+        <div className="text-lg font-semibold text-green-900 mb-2">
+          Scan & Dine
+        </div>
         <div className="text-md mb-3">{tableName}</div>
         <div className="w-48 h-48 bg-gray-100 rounded flex items-center justify-center">
           <QrCode className="h-24 w-24 text-green-600" />
@@ -93,23 +149,23 @@ function QRCodePreview({ qrCodeData, tableName }: { qrCodeData: string | null; t
 }
 
 // Create/Edit table dialog
-function TableFormDialog({ 
-  table, 
-  isOpen, 
-  onClose, 
-  onSubmit, 
-  isLoading 
-}: { 
-  table?: TableType; 
-  isOpen: boolean; 
-  onClose: () => void; 
-  onSubmit: (data: CreateTableData | UpdateTableData) => Promise<void>; 
+function TableFormDialog({
+  table,
+  isOpen,
+  onClose,
+  onSubmit,
+  isLoading,
+}: Readonly<{
+  table?: TableType;
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (data: CreateTableData | UpdateTableData) => Promise<void>;
   isLoading: boolean;
-}) {
+}>) {
   const [formData, setFormData] = useState<CreateTableData>({
-    number: table?.number || '',
+    number: table?.number || "",
     capacity: table?.capacity || 2,
-    location: table?.location || '',
+    location: table?.location || "",
     features: table?.features || [],
   });
 
@@ -123,9 +179,11 @@ function TableFormDialog({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{table ? 'Edit Table' : 'Create New Table'}</DialogTitle>
+          <DialogTitle>{table ? "Edit Table" : "Create New Table"}</DialogTitle>
           <DialogDescription>
-            {table ? 'Update table information' : 'Add a new table to your restaurant'}
+            {table
+              ? "Update table information"
+              : "Add a new table to your restaurant"}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -135,7 +193,9 @@ function TableFormDialog({
               <Input
                 id="number"
                 value={formData.number}
-                onChange={(e) => setFormData({ ...formData, number: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, number: e.target.value })
+                }
                 required
               />
             </div>
@@ -147,14 +207,24 @@ function TableFormDialog({
                 min="1"
                 max="20"
                 value={formData.capacity}
-                onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    capacity: parseInt(e.target.value),
+                  })
+                }
                 required
               />
             </div>
           </div>
           <div>
             <Label htmlFor="location">Location</Label>
-            <Select value={formData.location || ''} onValueChange={(value) => setFormData({ ...formData, location: value })}>
+            <Select
+              value={formData.location || ""}
+              onValueChange={(value) =>
+                setFormData({ ...formData, location: value })
+              }
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select location" />
               </SelectTrigger>
@@ -173,7 +243,7 @@ function TableFormDialog({
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading ? <LoadingSpinner size="sm" className="mr-2" /> : null}
-              {table ? 'Update' : 'Create'} Table
+              {table ? "Update" : "Create"} Table
             </Button>
           </DialogFooter>
         </form>
@@ -182,19 +252,18 @@ function TableFormDialog({
   );
 }
 
-// Table details dialog
-function TableDetailsDialog({ 
-  table, 
-  isOpen, 
-  onClose 
-}: { 
-  table: TableType | null; 
-  isOpen: boolean; 
+function TableDetailsDialog({
+  table,
+  isOpen,
+  onClose,
+}: {
+  table: TableType | null;
+  isOpen: boolean;
   onClose: () => void;
 }) {
   const { data: reservations } = useReservations(table?.id);
   const { data: payments } = usePayments(table?.id);
-  const { data: orders } = useTableOrders(table?.id || '');
+  const { data: orders } = useTableOrders(table?.id || "");
 
   if (!table) return null;
 
@@ -207,7 +276,7 @@ function TableDetailsDialog({
             Complete information about this table
           </DialogDescription>
         </DialogHeader>
-        
+
         <Tabs defaultValue="overview" className="w-full">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -215,7 +284,7 @@ function TableDetailsDialog({
             <TabsTrigger value="reservations">Reservations</TabsTrigger>
             <TabsTrigger value="payments">Payments</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="overview" className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -233,7 +302,7 @@ function TableDetailsDialog({
                 <Label>Location</Label>
                 <div className="flex items-center gap-2">
                   <MapPin className="h-4 w-4" />
-                  {table.location || 'Not specified'}
+                  {table.location || "Not specified"}
                 </div>
               </div>
               <div className="space-y-2">
@@ -241,7 +310,7 @@ function TableDetailsDialog({
                 <div>{table.currentCustomers || 0}</div>
               </div>
             </div>
-            
+
             {table.sessionStartTime && (
               <div className="space-y-2">
                 <Label>Session Info</Label>
@@ -253,19 +322,21 @@ function TableDetailsDialog({
                 </div>
               </div>
             )}
-            
+
             {table.features && table.features.length > 0 && (
               <div className="space-y-2">
                 <Label>Features</Label>
                 <div className="flex flex-wrap gap-2">
                   {table.features.map((feature, index) => (
-                    <Badge key={index} className="bg-gray-100 text-gray-800">{feature}</Badge>
+                    <Badge key={index} className="bg-gray-100 text-gray-800">
+                      {feature}
+                    </Badge>
                   ))}
                 </div>
               </div>
             )}
           </TabsContent>
-          
+
           <TabsContent value="orders" className="space-y-4">
             {orders && orders.length > 0 ? (
               <div className="space-y-2">
@@ -296,7 +367,7 @@ function TableDetailsDialog({
               </div>
             )}
           </TabsContent>
-          
+
           <TabsContent value="reservations" className="space-y-4">
             {reservations && reservations.length > 0 ? (
               <div className="space-y-2">
@@ -305,16 +376,21 @@ function TableDetailsDialog({
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start">
                         <div>
-                          <div className="font-medium">{reservation.customerName}</div>
+                          <div className="font-medium">
+                            {reservation.customerName}
+                          </div>
                           <div className="text-sm text-gray-600">
-                            {reservation.partySize} guests • {reservation.reservationTime}
+                            {reservation.partySize} guests •{" "}
+                            {reservation.reservationTime}
                           </div>
                           <Badge className="bg-green-100 text-green-800 mt-1">
                             {reservation.status}
                           </Badge>
                         </div>
                         <div className="text-sm text-gray-500">
-                          {new Date(reservation.reservationDate).toLocaleDateString()}
+                          {new Date(
+                            reservation.reservationDate
+                          ).toLocaleDateString()}
                         </div>
                       </div>
                     </CardContent>
@@ -327,7 +403,7 @@ function TableDetailsDialog({
               </div>
             )}
           </TabsContent>
-          
+
           <TabsContent value="payments" className="space-y-4">
             {payments && payments.length > 0 ? (
               <div className="space-y-2">
@@ -345,7 +421,9 @@ function TableDetailsDialog({
                           </Badge>
                         </div>
                         <div className="text-sm text-gray-500">
-                          {payment.paidAt ? new Date(payment.paidAt).toLocaleDateString() : 'Pending'}
+                          {payment.paidAt
+                            ? new Date(payment.paidAt).toLocaleDateString()
+                            : "Pending"}
                         </div>
                       </div>
                     </CardContent>
@@ -388,27 +466,39 @@ function TablesContent() {
     updatingTableId,
   } = useTablesManagement();
 
-  const { filteredTables, statusFilter, setStatusFilter, availableLocations, locationFilter, setLocationFilter } = useTableFilters(tables);
+  const {
+    filteredTables,
+    statusFilter,
+    setStatusFilter,
+    availableLocations,
+    locationFilter,
+    setLocationFilter,
+  } = useTableFilters(tables);
 
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingTable, setEditingTable] = useState<TableType | null>(null);
   const [viewingTable, setViewingTable] = useState<TableType | null>(null);
 
-  const selectedTableData = tables.find(t => t.id === selectedTable);
+  const selectedTableData = tables.find((t) => t.id === selectedTable);
 
-  const displayTables = searchQuery 
-    ? filteredTables.filter(table => 
-        table.number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        table.location?.toLowerCase().includes(searchQuery.toLowerCase())
+  const displayTables = searchQuery
+    ? filteredTables.filter(
+        (table) =>
+          table.number.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          table.location?.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : filteredTables;
 
-  const handleCreateSubmit = async (data: CreateTableData | UpdateTableData) => {
+  const handleCreateSubmit = async (
+    data: CreateTableData | UpdateTableData
+  ) => {
     await handleCreateTable(data as CreateTableData);
   };
 
-  const handleUpdateSubmit = async (data: CreateTableData | UpdateTableData) => {
+  const handleUpdateSubmit = async (
+    data: CreateTableData | UpdateTableData
+  ) => {
     if (editingTable) {
       await handleUpdateTable(editingTable.id, data);
     }
@@ -434,7 +524,10 @@ function TablesContent() {
     <div className="flex flex-col gap-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-green-900">Tables Management</h1>
-        <Button onClick={() => setIsCreateDialogOpen(true)} className="bg-green-600 hover:bg-green-700">
+        <Button
+          onClick={() => setIsCreateDialogOpen(true)}
+          className="bg-green-600 hover:bg-green-700"
+        >
           <Plus className="h-4 w-4 mr-2" />
           Add Table
         </Button>
@@ -455,7 +548,10 @@ function TablesContent() {
             </div>
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-gray-500" />
-              <Select value={statusFilter} onValueChange={(value: TableStatus) => setStatusFilter(value)}>
+              <Select
+                value={statusFilter}
+                onValueChange={(value: TableStatus) => setStatusFilter(value)}
+              >
                 <SelectTrigger className="w-40">
                   <SelectValue />
                 </SelectTrigger>
@@ -471,15 +567,22 @@ function TablesContent() {
             </div>
             <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4 text-gray-500" />
-              <Select value={locationFilter || 'all'} onValueChange={setLocationFilter}>
+              <Select
+                value={locationFilter || "all"}
+                onValueChange={setLocationFilter}
+              >
                 <SelectTrigger className="w-40">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Locations</SelectItem>
-                  {availableLocations.filter((location): location is string => Boolean(location)).map((location) => (
-                    <SelectItem key={location} value={location}>{location}</SelectItem>
-                  ))}
+                  {availableLocations
+                    .filter((location): location is string => Boolean(location))
+                    .map((location) => (
+                      <SelectItem key={location} value={location}>
+                        {location}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
@@ -511,7 +614,9 @@ function TablesContent() {
                       <div>
                         <div className="font-medium">Table {table.number}</div>
                         {table.location && (
-                          <div className="text-sm text-gray-500">{table.location}</div>
+                          <div className="text-sm text-gray-500">
+                            {table.location}
+                          </div>
                         )}
                       </div>
                     </TableCell>
@@ -552,7 +657,9 @@ function TablesContent() {
                         </Button>
                         <Select
                           value={table.status}
-                          onValueChange={(status: TableType['status']) => handleStatusUpdate(table.id, status)}
+                          onValueChange={(status: TableType["status"]) =>
+                            handleStatusUpdate(table.id, status)
+                          }
                           disabled={isUpdating && updatingTableId === table.id}
                         >
                           <SelectTrigger className="w-32">
@@ -563,7 +670,9 @@ function TablesContent() {
                             <SelectItem value="occupied">Occupied</SelectItem>
                             <SelectItem value="reserved">Reserved</SelectItem>
                             <SelectItem value="cleaning">Cleaning</SelectItem>
-                            <SelectItem value="maintenance">Maintenance</SelectItem>
+                            <SelectItem value="maintenance">
+                              Maintenance
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                         <Button
@@ -595,18 +704,19 @@ function TablesContent() {
           <CardHeader>
             <CardTitle>QR Code Preview</CardTitle>
             <CardDescription>
-              {selectedTableData 
-                ? `QR code for Table ${selectedTableData.number}` 
-                : 'Generate a QR code to preview it here'
-              }
+              {selectedTableData
+                ? `QR code for Table ${selectedTableData.number}`
+                : "Generate a QR code to preview it here"}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <QRCodePreview 
-              qrCodeData={qrCodeData} 
-              tableName={selectedTableData ? `Table ${selectedTableData.number}` : ''} 
+            <QRCodePreview
+              qrCodeData={qrCodeData}
+              tableName={
+                selectedTableData ? `Table ${selectedTableData.number}` : ""
+              }
             />
-            
+
             {qrCodeData && (
               <div className="flex gap-2 justify-center mt-4">
                 <Button
@@ -621,10 +731,7 @@ function TablesContent() {
                   )}
                   Download
                 </Button>
-                <Button
-                  onClick={handlePrint}
-                  variant="outline"
-                >
+                <Button onClick={handlePrint} variant="outline">
                   <Printer className="h-4 w-4 mr-2" />
                   Print
                 </Button>
@@ -661,10 +768,12 @@ function TablesContent() {
 
 export default function TablesPage() {
   return (
-    <DashboardLayout>
-      <ErrorBoundary>
-        <TablesContent />
-      </ErrorBoundary>
-    </DashboardLayout>
+    <ProtectedRoute requiredRoles={["ADMIN", "MANAGER"]}>
+      <DashboardLayout>
+        <ErrorBoundary>
+          <TablesContent />
+        </ErrorBoundary>
+      </DashboardLayout>
+    </ProtectedRoute>
   );
 }

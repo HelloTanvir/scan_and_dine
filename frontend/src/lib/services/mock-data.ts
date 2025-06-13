@@ -283,4 +283,6 @@ export const mockTableAnalytics: TableAnalytics[] = mockTables.map((table) => ({
     { itemName: 'Chicken Biryani', quantity: Math.floor(Math.random() * 20) + 5, revenue: Math.floor(Math.random() * 1000) + 500 },
     { itemName: 'Beef Kala Bhuna', quantity: Math.floor(Math.random() * 15) + 3, revenue: Math.floor(Math.random() * 800) + 400 },
   ],
-})); 
+}));
+
+ 
