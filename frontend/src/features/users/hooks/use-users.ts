@@ -88,7 +88,7 @@ export function useUserFilters() {
   const [pagination, setPagination] = useState<PaginationParams>({
     page: 0,
     size: 10,
-    sortBy: 'createdAt',
+    sortBy: 'created_at',
     sortDir: 'desc',
   });
 
@@ -107,7 +107,7 @@ export function useUserFilters() {
     setPagination({
       page: 0,
       size: 10,
-      sortBy: 'createdAt',
+      sortBy: 'created_at',
       sortDir: 'desc',
     });
   }, []);
