@@ -22,11 +22,15 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     private final UserRepository userRepository;
 
+    /**
+     * Loads user by email address (used as username in this system)
+     * Spring Security requires this method name, but we use email as the unique identifier
+     */
     @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException { // email, password authentication
-        log.info("Loading user by email: {}", email);
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        log.info("Loading user by email: {}", username);
+        User user = userRepository.findByEmail(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + username));
 
         return new CustomUserPrincipal(user);
     }
@@ -48,6 +52,9 @@ public class CustomUserDetailsService implements UserDetailsService {
             return user.getPassword();
         }
 
+        /**
+         * Returns email as username since we use email for authentication
+         */
         @Override
         public String getUsername() {
             return user.getEmail();

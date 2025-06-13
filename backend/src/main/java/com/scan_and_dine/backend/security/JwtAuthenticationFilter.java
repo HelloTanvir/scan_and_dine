@@ -14,6 +14,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -33,31 +34,63 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
         
-        final String authHeader = request.getHeader("Authorization");
-        
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
         try {
-            final String jwt = authHeader.substring(7);
-            final String email = jwtConfig.getEmailFromToken(jwt);
-
-            if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                UserDetails userDetails = userDetailsService.loadUserByUsername(email);
-                
-                if (jwtConfig.validateToken(jwt, email) && jwtConfig.isAccessToken(jwt)) {
-                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                            userDetails, null, userDetails.getAuthorities());
-                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(authToken);
-                }
+            String jwt = getJwtFromRequest(request);
+            
+            if (StringUtils.hasText(jwt) && SecurityContextHolder.getContext().getAuthentication() == null) {
+                validateAndAuthenticateToken(jwt, request);
             }
         } catch (Exception e) {
             log.error("JWT authentication failed: {}", e.getMessage());
+            // Clear security context on authentication failure
+            SecurityContextHolder.clearContext();
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private String getJwtFromRequest(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
+        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7);
+        }
+        return null;
+    }
+
+    private void validateAndAuthenticateToken(String jwt, HttpServletRequest request) {
+        // Validate token type - must be access token
+        if (!jwtConfig.isAccessToken(jwt)) {
+            log.warn("Invalid token type provided for authentication");
+            return;
+        }
+
+        String email = jwtConfig.getEmailFromToken(jwt);
+        
+        if (!StringUtils.hasText(email)) {
+            log.warn("No email found in JWT token");
+            return;
+        }
+
+        // Validate token
+        if (!jwtConfig.validateToken(jwt, email)) {
+            log.warn("JWT token validation failed for email: {}", email);
+            return;
+        }
+
+        // Load user and create authentication
+        UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+        
+        if (!userDetails.isEnabled() || !userDetails.isAccountNonLocked() || 
+            !userDetails.isAccountNonExpired() || !userDetails.isCredentialsNonExpired()) {
+            log.warn("User account is not valid: {}", email);
+            return;
+        }
+
+        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                userDetails, null, userDetails.getAuthorities());
+        authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+        SecurityContextHolder.getContext().setAuthentication(authToken);
+        
+        log.debug("Successfully authenticated user: {}", email);
     }
 }

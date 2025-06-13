@@ -31,6 +31,11 @@ server:
       enabled: false
 
 jwt:
-  secret: superStrongSecretForJwtForScanAndDineBySystemMakers
-  access-token-expiration: 900000    # 15 minutes
-  refresh-token-expiration: 604800000 # 7 days
+  secret: ${JWT_SECRET:superStrongSecretForJwtForScanAndDineBySystemMakers}
+  access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:900000}    # 15 minutes
+  refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:604800000} # 7 days
+
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001,http://localhost:5173}
+    max-age: ${CORS_MAX_AGE:3600}
