@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useApi } from '@/lib/hooks/use-api';
-import { tablesService } from '../services/tables.service';
+import { tablesService, TableFilters } from '../services/tables.service';
 import { 
   Table, 
   Payment, 
@@ -8,13 +8,17 @@ import {
   UpdateTableData,
   CreateReservationData,
   UpdateReservationData,
-  TableStatus
+  TableStatus,
+  PaginationParams
 } from '@/lib/types';
 
 // Basic tables hook
-export function useTables() {
+export function useTables(
+  filters: TableFilters = {},
+  pagination: PaginationParams = { page: 0, size: 50, sortBy: 'number', sortDir: 'asc' }
+) {
   return useApi(
-    () => tablesService.getTables(),
+    () => tablesService.getAllTables(filters, pagination),
     {
       immediate: true,
     }
@@ -145,17 +149,7 @@ export function useQRCodeGeneration() {
   const downloadQRCode = useCallback(async (tableId: string, tableName: string) => {
     setIsDownloading(true);
     try {
-      const blob = await tablesService.downloadQRCode(tableId);
-      
-      // Create download link
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `table-${tableName}-qr-code.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      await tablesService.downloadQRCode(tableId, tableName);
     } finally {
       setIsDownloading(false);
     }
@@ -361,6 +355,8 @@ export function useTablesManagement() {
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
   const [qrCodeData, setQrCodeData] = useState<string | null>(null);
 
+  const tables = tablesApi.data || [];
+
   const handleGenerateQR = useCallback(async (tableId: string) => {
     try {
       setSelectedTable(tableId);
@@ -374,9 +370,9 @@ export function useTablesManagement() {
   }, [generateQRCode]);
 
   const handleDownload = useCallback(async () => {
-    if (!selectedTable || !tablesApi.data) return;
+    if (!selectedTable || !tables) return;
     
-    const table = tablesApi.data.find((t: Table) => t.id === selectedTable);
+    const table = tables.find((t: Table) => t.id === selectedTable);
     if (!table) return;
 
     try {
@@ -384,12 +380,12 @@ export function useTablesManagement() {
     } catch (error) {
       console.error('Failed to download QR code:', error);
     }
-  }, [selectedTable, tablesApi.data, downloadQRCode]);
+  }, [selectedTable, tables, downloadQRCode]);
 
   const handlePrint = useCallback(() => {
-    if (!qrCodeData || !selectedTable || !tablesApi.data) return;
+    if (!qrCodeData || !selectedTable || !tables) return;
     
-    const table = tablesApi.data.find((t: Table) => t.id === selectedTable);
+    const table = tables.find((t: Table) => t.id === selectedTable);
     if (!table) return;
 
     const printWindow = window.open('', '_blank');
@@ -429,16 +425,11 @@ export function useTablesManagement() {
               color: #333;
               margin-bottom: 20px;
             }
-            .qr-placeholder {
+            .qr-code {
               width: 200px;
               height: 200px;
-              border: 2px dashed #16a34a;
               margin: 0 auto 20px;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              font-size: 14px;
-              color: #16a34a;
+              display: block;
             }
             .instructions {
               font-size: 14px;
@@ -453,7 +444,7 @@ export function useTablesManagement() {
           <div class="qr-container">
             <div class="restaurant-name">Scan & Dine</div>
             <div class="table-name">Table ${table.number} • ${table.capacity} Seats</div>
-            <div class="qr-placeholder">QR Code Here</div>
+            <img src="${qrCodeData}" alt="QR Code for Table ${table.number}" class="qr-code" />
             <div class="instructions">
               Scan this QR code with your phone camera to view our menu and place your order directly from your table.
             </div>
@@ -469,7 +460,7 @@ export function useTablesManagement() {
       printWindow.print();
       printWindow.close();
     }, 250);
-  }, [qrCodeData, selectedTable, tablesApi.data]);
+  }, [qrCodeData, selectedTable, tables]);
 
   const handleStatusUpdate = useCallback(async (tableId: string, status: Table['status']) => {
     try {
@@ -525,7 +516,7 @@ export function useTablesManagement() {
 
   return {
     // Data
-    tables: tablesApi.data || [],
+    tables,
     isLoading: tablesApi.isLoading,
     error: tablesApi.error,
     selectedTable,

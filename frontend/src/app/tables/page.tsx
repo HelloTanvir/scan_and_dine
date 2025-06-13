@@ -41,9 +41,6 @@ import { ErrorBoundary } from "@/components/common/error-boundary";
 import { LoadingSpinner } from "@/components/common/loading-spinner";
 import {
   useTablesManagement,
-  useReservations,
-  usePayments,
-  useTableOrders,
   useTableFilters,
 } from "@/features/tables/hooks/use-tables";
 import {
@@ -93,14 +90,14 @@ function Badge({
 
 function StatusBadge({ status }: { status: TableType["status"] }) {
   const statusConfig = {
-    available: { color: "bg-green-100 text-green-800", icon: CheckCircle },
-    occupied: { color: "bg-red-100 text-red-800", icon: Users },
-    reserved: { color: "bg-blue-100 text-blue-800", icon: Clock },
-    cleaning: { color: "bg-yellow-100 text-yellow-800", icon: AlertCircle },
-    maintenance: { color: "bg-gray-100 text-gray-800", icon: XCircle },
+    AVAILABLE: { color: "bg-green-100 text-green-800", icon: CheckCircle },
+    OCCUPIED: { color: "bg-red-100 text-red-800", icon: Users },
+    RESERVED: { color: "bg-blue-100 text-blue-800", icon: Clock },
+    CLEANING: { color: "bg-yellow-100 text-yellow-800", icon: AlertCircle },
+    MAINTENANCE: { color: "bg-gray-100 text-gray-800", icon: XCircle },
   };
 
-  const config = statusConfig[status];
+  const config = statusConfig[status || "AVAILABLE"];
   const Icon = config.icon;
 
   return (
@@ -137,8 +134,12 @@ function QRCodePreview({
           Scan & Dine
         </div>
         <div className="text-md mb-3">{tableName}</div>
-        <div className="w-48 h-48 bg-gray-100 rounded flex items-center justify-center">
-          <QrCode className="h-24 w-24 text-green-600" />
+        <div className="w-48 h-48 bg-gray-100 rounded flex items-center justify-center p-2">
+          <img 
+            src={qrCodeData} 
+            alt={`QR Code for ${tableName}`}
+            className="w-full h-full object-contain"
+          />
         </div>
         <div className="text-xs text-gray-600 mt-3 max-w-48">
           Scan this QR code to view our menu and place your order
@@ -261,9 +262,68 @@ function TableDetailsDialog({
   isOpen: boolean;
   onClose: () => void;
 }) {
-  const { data: reservations } = useReservations(table?.id);
-  const { data: payments } = usePayments(table?.id);
-  const { data: orders } = useTableOrders(table?.id || "");
+  // Mock data for demonstration - will be replaced with real API calls in future
+  const orders = table ? [
+    {
+      id: `ORD-${table.number}-001`,
+      items: [
+        { name: "Grilled Chicken", quantity: 2 },
+        { name: "Caesar Salad", quantity: 1 },
+        { name: "Coca Cola", quantity: 2 }
+      ],
+      total: 45.99,
+      status: "preparing",
+      time: "12:30 PM"
+    },
+    {
+      id: `ORD-${table.number}-002`,
+      items: [
+        { name: "Pasta Carbonara", quantity: 1 },
+        { name: "Garlic Bread", quantity: 1 }
+      ],
+      total: 28.50,
+      status: "served",
+      time: "1:15 PM"
+    }
+  ] : [];
+
+  const reservations = table ? [
+    {
+      id: `RES-${table.number}-001`,
+      customerName: "John Smith",
+      partySize: 4,
+      reservationTime: "7:30 PM",
+      status: "confirmed",
+      reservationDate: new Date().toISOString()
+    },
+    {
+      id: `RES-${table.number}-002`,
+      customerName: "Sarah Johnson",
+      partySize: 2,
+      reservationTime: "8:00 PM",
+      status: "pending",
+      reservationDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+    }
+  ] : [];
+
+  const payments = table ? [
+    {
+      id: `PAY-${table.number}-001`,
+      amount: 45.99,
+      method: "Credit Card",
+      orderId: `ORD-${table.number}-001`,
+      status: "completed",
+      paidAt: new Date().toISOString()
+    },
+    {
+      id: `PAY-${table.number}-002`,
+      amount: 28.50,
+      method: "Cash",
+      orderId: `ORD-${table.number}-002`,
+      status: "pending",
+      paidAt: null
+    }
+  ] : [];
 
   if (!table) return null;
 

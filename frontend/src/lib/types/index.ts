@@ -88,7 +88,7 @@ export interface Table {
   id: string;
   number: string;
   capacity: number;
-  status: 'available' | 'occupied' | 'reserved' | 'cleaning' | 'maintenance';
+  status: 'AVAILABLE' | 'OCCUPIED' | 'RESERVED' | 'CLEANING' | 'MAINTENANCE';
   isOccupied: boolean;
   qrCode?: string;
   currentOrder?: string;
@@ -128,7 +128,7 @@ export interface ChartData {
 }
 
 // Table filter options
-export type TableStatus = 'all' | 'available' | 'occupied' | 'reserved' | 'cleaning' | 'maintenance';
+export type TableStatus = 'all' | 'AVAILABLE' | 'OCCUPIED' | 'RESERVED' | 'CLEANING' | 'MAINTENANCE';
 export type TableSortBy = 'number' | 'capacity' | 'status' | 'revenue';
 
 // API response types
@@ -136,6 +136,13 @@ export interface ApiResponse<T> {
   data: T;
   message?: string;
   success: boolean;
+}
+
+export interface PaginationParams {
+  page: number;
+  size: number;
+  sortBy: string;
+  sortDir: 'asc' | 'desc';
 }
 
 export interface PaginatedResponse<T> {

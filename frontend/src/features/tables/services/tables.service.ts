@@ -1,3 +1,4 @@
+import { apiClient } from '@/lib/api/client';
 import { 
   Table, 
   Reservation, 
@@ -7,361 +8,281 @@ import {
   UpdateTableData,
   CreateReservationData,
   UpdateReservationData,
-  Order
+  Order,
+  PaginationParams
 } from '@/lib/types';
-import { 
-  mockTables, 
-  mockReservations, 
-  mockPayments, 
-  mockTableAnalytics,
-  mockOrders 
-} from '@/lib/services/mock-data';
 import { API_ENDPOINTS } from '@/lib/constants';
+import QRCode from 'qrcode';
+
+export interface TableFilters {
+  number?: string;
+  location?: string;
+  status?: Table['status'];
+  isOccupied?: boolean;
+}
+
+export interface SeatCustomersData {
+  customerCount: number;
+}
+
+export interface BulkStatusUpdateData {
+  tableIds: string[];
+  status: Table['status'];
+}
 
 export class TablesService {
-  private tables: Table[] = [...mockTables];
-  private reservations: Reservation[] = [...mockReservations];
-  private payments: Payment[] = [...mockPayments];
-  private orders: Order[] = [...mockOrders];
-
-  private endpoints = {
-    tables: API_ENDPOINTS.TABLES,
-    tablesQR: API_ENDPOINTS.TABLES_QR,
-    reservations: '/api/reservations',
-    payments: '/api/payments',
-    analytics: '/api/analytics/tables',
-  };
+  private readonly baseUrl = API_ENDPOINTS.TABLES;
 
   // Table CRUD operations
-  async getTables(): Promise<Table[]> {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    // const response = await fetch(this.endpoints.tables);
-    // if (!response.ok) throw new Error('Failed to fetch tables');
-    // return response.json();
+  async getAllTables(
+    filters: TableFilters = {},
+    pagination: PaginationParams = { page: 0, size: 10, sortBy: 'number', sortDir: 'asc' }
+  ): Promise<Table[]> {
+    const params = new URLSearchParams();
     
-    return [...this.tables];
+    // Add filters
+    if (filters.number) params.append('number', filters.number);
+    if (filters.location) params.append('location', filters.location);
+    if (filters.status) params.append('status', filters.status);
+    if (filters.isOccupied !== undefined) params.append('isOccupied', filters.isOccupied.toString());
+    
+    // Add pagination
+    params.append('page', pagination.page.toString());
+    params.append('size', pagination.size.toString());
+    params.append('sortBy', pagination.sortBy);
+    params.append('sortDir', pagination.sortDir);
+
+    const queryString = params.toString();
+    const url = queryString ? `${this.baseUrl}?${queryString}` : this.baseUrl;
+    
+    // Spring Boot returns Page object with 'content' property
+    const response = await apiClient.get<{content: Table[]}>(url);
+    return response.content;
   }
 
   async getTable(tableId: string): Promise<Table> {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    // const response = await fetch(`${this.endpoints.tables}/${tableId}`);
-    // if (!response.ok) throw new Error('Table not found');
-    // return response.json();
+    return apiClient.get<Table>(`${this.baseUrl}/${tableId}`);
+  }
 
-    const table = this.tables.find(t => t.id === tableId);
-    if (!table) throw new Error('Table not found');
-    return table;
+  async getTableByNumber(number: string): Promise<Table> {
+    return apiClient.get<Table>(`${this.baseUrl}/number/${number}`);
   }
 
   async createTable(tableData: CreateTableData): Promise<Table> {
-    await new Promise(resolve => setTimeout(resolve, 800));
-    // const response = await fetch(this.endpoints.tables, {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(tableData),
-    // });
-    // if (!response.ok) throw new Error('Failed to create table');
-    // return response.json();
-
-    const newTable: Table = {
-      ...tableData,
-      id: `table-${Date.now()}`,
-      status: 'available',
-      isOccupied: false,
-      qrCode: `qr-table-${Date.now()}`,
-      createdAt: new Date(),
-      lastCleaned: new Date(),
-    };
-
-    this.tables.push(newTable);
-    return newTable;
+    return apiClient.post<Table>(this.baseUrl, tableData);
   }
 
   async updateTable(tableId: string, updates: UpdateTableData): Promise<Table> {
-    await new Promise(resolve => setTimeout(resolve, 600));
-    // const response = await fetch(`${this.endpoints.tables}/${tableId}`, {
-    //   method: 'PATCH',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(updates),
-    // });
-    // if (!response.ok) throw new Error('Failed to update table');
-    // return response.json();
-
-    const tableIndex = this.tables.findIndex(t => t.id === tableId);
-    if (tableIndex === -1) throw new Error('Table not found');
-
-    this.tables[tableIndex] = { 
-      ...this.tables[tableIndex], 
-      ...updates,
-      updatedAt: new Date()
-    };
-    return this.tables[tableIndex];
+    return apiClient.put<Table>(`${this.baseUrl}/${tableId}`, updates);
   }
 
   async deleteTable(tableId: string): Promise<void> {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    // await fetch(`${this.endpoints.tables}/${tableId}`, {
-    //   method: 'DELETE',
-    // });
-
-    const tableIndex = this.tables.findIndex(t => t.id === tableId);
-    if (tableIndex === -1) throw new Error('Table not found');
-
-    this.tables.splice(tableIndex, 1);
+    return apiClient.delete<void>(`${this.baseUrl}/${tableId}`);
   }
 
   // Table status management
   async updateTableStatus(tableId: string, status: Table['status']): Promise<Table> {
-    await new Promise(resolve => setTimeout(resolve, 400));
-    
-    const tableIndex = this.tables.findIndex(t => t.id === tableId);
-    if (tableIndex === -1) throw new Error('Table not found');
-
-    this.tables[tableIndex] = {
-      ...this.tables[tableIndex],
-      status,
-      isOccupied: status === 'occupied',
-      updatedAt: new Date(),
-      ...(status === 'cleaning' && { lastCleaned: new Date() }),
-      ...(status === 'occupied' && { sessionStartTime: new Date() }),
-      ...(status === 'available' && { 
-        currentOrder: undefined,
-        currentReservation: undefined,
-        currentCustomers: undefined,
-        sessionStartTime: undefined,
-        totalSessionAmount: undefined
-      }),
-    };
-
-    return this.tables[tableIndex];
+    return apiClient.patch<Table>(`${this.baseUrl}/${tableId}/status`, { status });
   }
 
   async seatCustomers(tableId: string, customerCount: number): Promise<Table> {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    const tableIndex = this.tables.findIndex(t => t.id === tableId);
-    if (tableIndex === -1) throw new Error('Table not found');
+    return apiClient.patch<Table>(`${this.baseUrl}/${tableId}/seat`, { customerCount });
+  }
 
-    this.tables[tableIndex] = {
-      ...this.tables[tableIndex],
-      status: 'occupied',
-      isOccupied: true,
-      currentCustomers: customerCount,
-      sessionStartTime: new Date(),
-      totalSessionAmount: 0,
-      updatedAt: new Date(),
-    };
+  // Status and availability queries
+  async getTablesByStatus(status: Table['status']): Promise<Table[]> {
+    return apiClient.get<Table[]>(`${this.baseUrl}/status/${status}`);
+  }
 
-    return this.tables[tableIndex];
+  async getAvailableTables(): Promise<Table[]> {
+    return apiClient.get<Table[]>(`${this.baseUrl}/available`);
+  }
+
+  async searchTables(query: string): Promise<Table[]> {
+    const params = new URLSearchParams({ query });
+    return apiClient.get<Table[]>(`${this.baseUrl}/search?${params.toString()}`);
   }
 
   // QR Code operations
   async generateQRCode(tableId: string): Promise<string> {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    // const response = await fetch(`${this.endpoints.tablesQR}/${tableId}`, {
-    //   method: 'POST',
-    // });
-    // if (!response.ok) throw new Error('Failed to generate QR code');
-    // const data = await response.json();
-    // return data.qrCode;
-
-    const table = this.tables.find(t => t.id === tableId);
-    if (!table) throw new Error('Table not found');
-
-    const qrCodeData = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/menu?table=${table.number}`;
-    return qrCodeData;
+    try {
+      // Get table details first
+      const table = await this.getTable(tableId);
+      
+      // Generate a unique session ID for the device accessing the menu
+      const sessionId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      
+      // Create the menu URL with table number and session ID
+      const menuUrl = `${window.location.origin}/menu?table=${table.number}&session=${sessionId}&tableId=${tableId}`;
+      
+      // Generate QR code as data URL
+      const qrCodeDataUrl = await QRCode.toDataURL(menuUrl, {
+        errorCorrectionLevel: 'M',
+        margin: 1,
+        color: {
+          dark: '#16a34a', // Green color
+          light: '#FFFFFF'
+        },
+        width: 256
+      });
+      
+      return qrCodeDataUrl;
+    } catch (error) {
+      console.error('Failed to generate QR code:', error);
+      throw new Error('Failed to generate QR code');
+    }
   }
 
-  async downloadQRCode(tableId: string): Promise<Blob> {
-    await new Promise(resolve => setTimeout(resolve, 800));
-    // const response = await fetch(`${this.endpoints.tablesQR}/${tableId}/download`);
-    // if (!response.ok) throw new Error('Failed to download QR code');
-    // return response.blob();
-
-    // Create a simple QR code image blob for demo
-    const canvas = document.createElement('canvas');
-    canvas.width = 200;
-    canvas.height = 200;
-    const ctx = canvas.getContext('2d');
-    
-    if (ctx) {
-      ctx.fillStyle = 'white';
-      ctx.fillRect(0, 0, 200, 200);
-      ctx.fillStyle = 'black';
-      ctx.font = '16px Arial';
+  async downloadQRCode(tableId: string, tableName: string): Promise<void> {
+    try {
+      // Get table details first
+      const table = await this.getTable(tableId);
+      
+      // Generate a unique session ID for the device accessing the menu
+      const sessionId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      
+      // Create the menu URL with table number and session ID
+      const menuUrl = `${window.location.origin}/menu?table=${table.number}&session=${sessionId}&tableId=${tableId}`;
+      
+      // Generate QR code as data URL with higher resolution for download
+      const qrCodeDataUrl = await QRCode.toDataURL(menuUrl, {
+        errorCorrectionLevel: 'M',
+        margin: 2,
+        color: {
+          dark: '#16a34a', // Green color
+          light: '#FFFFFF'
+        },
+        width: 512 // Higher resolution for download
+      });
+      
+      // Create a canvas to add restaurant branding
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Could not create canvas context');
+      
+      // Set canvas size
+      canvas.width = 600;
+      canvas.height = 700;
+      
+      // White background
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Load the QR code image
+      const qrImage = new Image();
+      await new Promise<void>((resolve, reject) => {
+        qrImage.onload = () => resolve();
+        qrImage.onerror = () => reject(new Error('Failed to load QR code image'));
+        qrImage.src = qrCodeDataUrl;
+      });
+      
+      // Add restaurant name
+      ctx.fillStyle = '#16a34a';
+      ctx.font = 'bold 32px Arial, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(`Table ${tableId}`, 100, 100);
+      ctx.fillText('Scan & Dine', canvas.width / 2, 60);
+      
+      // Add table info
+      ctx.fillStyle = '#333333';
+      ctx.font = 'bold 24px Arial, sans-serif';
+      ctx.fillText(`Table ${table.number}`, canvas.width / 2, 100);
+      
+      ctx.font = '18px Arial, sans-serif';
+      ctx.fillText(`${table.capacity} Seats`, canvas.width / 2, 130);
+      
+      if (table.location) {
+        ctx.fillText(`Location: ${table.location}`, canvas.width / 2, 155);
+      }
+      
+      // Draw QR code
+      ctx.drawImage(qrImage, (canvas.width - 400) / 2, 180, 400, 400);
+      
+      // Add instructions
+      ctx.fillStyle = '#666666';
+      ctx.font = '16px Arial, sans-serif';
+      ctx.textAlign = 'center';
+      const instructions = [
+        'Scan this QR code with your phone camera',
+        'to view our menu and place your order',
+        'directly from your table.'
+      ];
+      
+      instructions.forEach((line, index) => {
+        ctx.fillText(line, canvas.width / 2, 620 + (index * 25));
+      });
+      
+      // Convert canvas to blob and download
+      canvas.toBlob((blob) => {
+        if (!blob) throw new Error('Failed to create image blob');
+        
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `table-${tableName}-qr-code.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 'image/png', 0.95);
+      
+    } catch (error) {
+      console.error('Failed to download QR code:', error);
+      throw new Error('Failed to download QR code');
     }
-
-    return new Promise(resolve => {
-      canvas.toBlob(blob => resolve(blob!), 'image/png');
-    });
-  }
-
-  // Reservation management
-  async getReservations(tableId?: string): Promise<Reservation[]> {
-    await new Promise(resolve => setTimeout(resolve, 400));
-    // const url = tableId ? `${this.endpoints.reservations}?tableId=${tableId}` : this.endpoints.reservations;
-    // const response = await fetch(url);
-    // if (!response.ok) throw new Error('Failed to fetch reservations');
-    // return response.json();
-
-    return tableId 
-      ? this.reservations.filter(r => r.tableId === tableId)
-      : [...this.reservations];
-  }
-
-  async createReservation(reservationData: CreateReservationData): Promise<Reservation> {
-    await new Promise(resolve => setTimeout(resolve, 600));
-    // const response = await fetch(this.endpoints.reservations, {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(reservationData),
-    // });
-    // if (!response.ok) throw new Error('Failed to create reservation');
-    // return response.json();
-
-    const newReservation: Reservation = {
-      ...reservationData,
-      id: `RES-${Date.now()}`,
-      status: 'confirmed',
-      createdAt: new Date(),
-    };
-
-    this.reservations.push(newReservation);
-
-    // Update table status if reservation is for today
-    const today = new Date().toDateString();
-    if (reservationData.reservationDate.toDateString() === today) {
-      await this.updateTableStatus(reservationData.tableId, 'reserved');
-    }
-
-    return newReservation;
-  }
-
-  async updateReservation(reservationId: string, updates: UpdateReservationData): Promise<Reservation> {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const reservationIndex = this.reservations.findIndex(r => r.id === reservationId);
-    if (reservationIndex === -1) throw new Error('Reservation not found');
-
-    this.reservations[reservationIndex] = {
-      ...this.reservations[reservationIndex],
-      ...updates,
-      updatedAt: new Date(),
-    };
-
-    return this.reservations[reservationIndex];
-  }
-
-  async cancelReservation(reservationId: string): Promise<void> {
-    await new Promise(resolve => setTimeout(resolve, 400));
-    
-    const reservation = this.reservations.find(r => r.id === reservationId);
-    if (!reservation) throw new Error('Reservation not found');
-
-    await this.updateReservation(reservationId, { status: 'cancelled' });
-
-    // Update table status if it was reserved
-    const table = this.tables.find(t => t.id === reservation.tableId);
-    if (table && table.status === 'reserved') {
-      await this.updateTableStatus(reservation.tableId, 'available');
-    }
-  }
-
-  // Payment management
-  async getPayments(tableId?: string): Promise<Payment[]> {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    return tableId 
-      ? this.payments.filter(p => p.tableId === tableId)
-      : [...this.payments];
-  }
-
-  async processPayment(orderId: string, paymentData: Partial<Payment>): Promise<Payment> {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const order = this.orders.find(o => o.id === orderId);
-    if (!order) throw new Error('Order not found');
-
-    const newPayment: Payment = {
-      id: `PAY-${Date.now()}`,
-      orderId,
-      tableId: `table-${order.tableNumber}`,
-      amount: order.total,
-      method: paymentData.method || 'cash',
-      status: 'completed',
-      paidAt: new Date(),
-      createdAt: new Date(),
-      ...paymentData,
-    };
-
-    this.payments.push(newPayment);
-
-    // Update order payment status
-    const orderIndex = this.orders.findIndex(o => o.id === orderId);
-    if (orderIndex !== -1) {
-      this.orders[orderIndex] = {
-        ...this.orders[orderIndex],
-        paymentStatus: 'paid',
-        paymentMethod: newPayment.method,
-      };
-    }
-
-    return newPayment;
-  }
-
-  // Analytics
-  async getTableAnalytics(tableId?: string): Promise<TableAnalytics[]> {
-    await new Promise(resolve => setTimeout(resolve, 600));
-    // const url = tableId ? `${this.endpoints.analytics}/${tableId}` : this.endpoints.analytics;
-    // const response = await fetch(url);
-    // if (!response.ok) throw new Error('Failed to fetch analytics');
-    // return response.json();
-
-    return tableId 
-      ? mockTableAnalytics.filter(a => a.tableId === tableId)
-      : [...mockTableAnalytics];
-  }
-
-  // Table orders
-  async getTableOrders(tableId: string): Promise<Order[]> {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    const table = this.tables.find(t => t.id === tableId);
-    if (!table) throw new Error('Table not found');
-
-    return this.orders.filter(o => o.tableNumber === table.number);
   }
 
   // Bulk operations
   async bulkUpdateTableStatus(tableIds: string[], status: Table['status']): Promise<Table[]> {
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    const updatedTables: Table[] = [];
-    
-    for (const tableId of tableIds) {
-      try {
-        const updatedTable = await this.updateTableStatus(tableId, status);
-        updatedTables.push(updatedTable);
-      } catch (error) {
-        console.error(`Failed to update table ${tableId}:`, error);
-      }
-    }
-
-    return updatedTables;
+    return apiClient.patch<Table[]>(`${this.baseUrl}/bulk-status`, { tableIds, status });
   }
 
-  // Search and filter
-  async searchTables(query: string): Promise<Table[]> {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    
-    const lowercaseQuery = query.toLowerCase();
-    return this.tables.filter(table => 
-      table.number.toLowerCase().includes(lowercaseQuery) ||
-      table.location?.toLowerCase().includes(lowercaseQuery) ||
-      table.features?.some(feature => feature.toLowerCase().includes(lowercaseQuery))
-    );
+  // Statistics
+  async getTableStatistics(): Promise<Record<string, number>> {
+    return apiClient.get<Record<string, number>>(`${this.baseUrl}/statistics`);
+  }
+
+  // Legacy methods for reservations, payments, analytics (to be implemented later)
+  async getReservations(tableId?: string): Promise<Reservation[]> {
+    // TODO: Implement with backend reservations API
+    const url = tableId ? `/api/reservations?tableId=${tableId}` : '/api/reservations';
+    return apiClient.get<Reservation[]>(url);
+  }
+
+  async createReservation(reservationData: CreateReservationData): Promise<Reservation> {
+    // TODO: Implement with backend reservations API
+    return apiClient.post<Reservation>('/api/reservations', reservationData);
+  }
+
+  async updateReservation(reservationId: string, updates: UpdateReservationData): Promise<Reservation> {
+    // TODO: Implement with backend reservations API
+    return apiClient.put<Reservation>(`/api/reservations/${reservationId}`, updates);
+  }
+
+  async cancelReservation(reservationId: string): Promise<void> {
+    // TODO: Implement with backend reservations API
+    return apiClient.patch<void>(`/api/reservations/${reservationId}`, { status: 'cancelled' });
+  }
+
+  async getPayments(tableId?: string): Promise<Payment[]> {
+    // TODO: Implement with backend payments API
+    const url = tableId ? `/api/payments?tableId=${tableId}` : '/api/payments';
+    return apiClient.get<Payment[]>(url);
+  }
+
+  async processPayment(orderId: string, paymentData: Partial<Payment>): Promise<Payment> {
+    // TODO: Implement with backend payments API
+    return apiClient.post<Payment>('/api/payments', { orderId, ...paymentData });
+  }
+
+  async getTableAnalytics(tableId?: string): Promise<TableAnalytics[]> {
+    // TODO: Implement with backend analytics API
+    const url = tableId ? `/api/analytics/tables/${tableId}` : '/api/analytics/tables';
+    return apiClient.get<TableAnalytics[]>(url);
+  }
+
+  async getTableOrders(tableId: string): Promise<Order[]> {
+    // TODO: Implement with backend orders API
+    return apiClient.get<Order[]>(`/api/orders?tableId=${tableId}`);
   }
 }
 
