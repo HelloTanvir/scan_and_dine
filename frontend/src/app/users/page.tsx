@@ -2,13 +2,13 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, RefreshCw } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import DashboardLayout from '@/components/layout/dashboard-layout';
 import { ProtectedRoute } from '@/components/auth/protected-route';
 import { UsersTable } from '@/features/users/components/users-table';
 import { UsersFilters } from '@/features/users/components/users-filters';
 import { UserForm } from '@/features/users/components/user-form';
-import { useUsers, useUserOperations, useUserFilters } from '@/features/users/hooks/use-users';
+import { useUserFilters, useUserOperations } from '@/features/users/hooks/use-users';
 import { 
   UserResponseDto, 
   CreateUserRequestDto, 
@@ -20,8 +20,7 @@ export default function UsersPage() {
   const [editingUser, setEditingUser] = useState<UserResponseDto | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   
-  const { filters, pagination, updateFilters, updatePagination, resetFilters } = useUserFilters();
-  const { data, error, isLoading } = useUsers(filters, pagination);
+  const { filters, data, error, isLoading, updateFilters, updatePagination, resetFilters, refreshData } = useUserFilters();
   const { 
     createUser, 
     updateUser, 
@@ -30,8 +29,10 @@ export default function UsersPage() {
     isCreating, 
     isUpdating, 
     isDeleting,
-    updatingUserId 
-  } = useUserOperations();
+    updatingUserId,
+    error: operationError,
+    clearError
+  } = useUserOperations(refreshData);
 
   const handleCreateUser = () => {
     setEditingUser(null);
@@ -57,6 +58,7 @@ export default function UsersPage() {
       }
       
       handleCloseForm();
+      clearError();
     } catch (error) {
       console.error('Error saving user:', error);
     }
@@ -65,6 +67,7 @@ export default function UsersPage() {
   const handleDeleteUser = async (userId: string) => {
     try {
       await deleteUser(userId);
+      clearError();
     } catch (error) {
       console.error('Error deleting user:', error);
     }
@@ -73,6 +76,7 @@ export default function UsersPage() {
   const handleStatusChange = async (userId: string, status: UserStatus) => {
     try {
       await updateUserStatus(userId, status);
+      clearError();
     } catch (error) {
       console.error('Error updating user status:', error);
     }
@@ -80,10 +84,6 @@ export default function UsersPage() {
 
   const handlePageChange = (page: number) => {
     updatePagination({ page });
-  };
-
-  const handleRefresh = () => {
-    updateFilters({});
   };
 
   return (
@@ -98,14 +98,6 @@ export default function UsersPage() {
             </p>
           </div>
           <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              onClick={handleRefresh}
-              disabled={isLoading}
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
             <Button onClick={handleCreateUser}>
               <Plus className="h-4 w-4 mr-2" />
               Add User
@@ -150,6 +142,24 @@ export default function UsersPage() {
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="text-red-800">
               <strong>Error:</strong> Failed to load users. Please try again.
+            </div>
+          </div>
+        )}
+
+        {operationError && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div className="text-red-800">
+                <strong>Error:</strong> {operationError}
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={clearError}
+                className="text-red-600 border-red-200 hover:bg-red-100"
+              >
+                Dismiss
+              </Button>
             </div>
           </div>
         )}

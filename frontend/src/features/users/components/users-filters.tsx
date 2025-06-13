@@ -74,7 +74,6 @@ export function UsersFilters({ filters, onFiltersChange, onReset }: UsersFilters
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Roles</SelectItem>
-              <SelectItem value="ADMIN">Admin</SelectItem>
               <SelectItem value="MANAGER">Manager</SelectItem>
               <SelectItem value="STAFF">Staff</SelectItem>
             </SelectContent>
