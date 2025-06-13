@@ -43,7 +43,7 @@ public class User {
     @Size(min = 6, message = "Password must be at least 6 characters")
     private String password;
 
-    @Column(name = "phone_number", columnDefinition = "VARCHAR(15)")
+    @Column(name = "phoneNumber", columnDefinition = "VARCHAR(15)")
     @JdbcTypeCode(SqlTypes.VARCHAR)
     @Size(max = 15, message = "Phone number cannot exceed 15 characters")
     private String phoneNumber;
@@ -57,11 +57,11 @@ public class User {
     private UserStatus status = UserStatus.ACTIVE;
 
     @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "createdAt", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(name = "updated_at")
+    @Column(name = "updatedAt")
     private LocalDateTime updatedAt;
 
     public enum UserRole {

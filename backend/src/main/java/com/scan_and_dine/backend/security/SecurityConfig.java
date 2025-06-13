@@ -18,6 +18,7 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
+import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 
@@ -31,6 +32,7 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CustomUserDetailsService userDetailsService;
+    private final CorsConfigurationSource corsConfigurationSource;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -71,6 +73,7 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .csrf(AbstractHttpConfigurer::disable)
+            .cors(cors -> cors.configurationSource(corsConfigurationSource)) // Enable CORS with our configuration
             .authorizeHttpRequests(request -> request
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/error").permitAll()

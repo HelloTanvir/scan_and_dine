@@ -24,16 +24,16 @@ public class RefreshToken {
     private String token;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "userId", nullable = false)
     private User user;
 
-    @Column(name = "expires_at", nullable = false)
+    @Column(name = "expiresAt", nullable = false)
     private LocalDateTime expiresAt;
 
     @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "createdAt", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "is_revoked", nullable = false)
+    @Column(name = "isRevoked", nullable = false)
     private boolean isRevoked = false;
 } 
