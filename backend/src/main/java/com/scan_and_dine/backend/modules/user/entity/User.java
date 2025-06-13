@@ -50,7 +50,7 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private UserRole role = UserRole.CUSTOMER;
+    private UserRole role = UserRole.STAFF;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -65,7 +65,7 @@ public class User {
     private LocalDateTime updatedAt;
 
     public enum UserRole {
-        ADMIN, MANAGER, STAFF, CUSTOMER
+        ADMIN, MANAGER, STAFF
     }
 
     public enum UserStatus {

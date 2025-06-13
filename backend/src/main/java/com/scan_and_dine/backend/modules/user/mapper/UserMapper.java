@@ -23,7 +23,7 @@ public interface UserMapper {
     @AfterMapping
     default void setDefaults(@MappingTarget User user, CreateUserRequestDto requestDto) {
         if (user.getRole() == null) {
-            user.setRole(User.UserRole.CUSTOMER);
+            user.setRole(User.UserRole.STAFF);
         }
         user.setStatus(User.UserStatus.ACTIVE);
     }
