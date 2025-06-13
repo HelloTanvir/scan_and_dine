@@ -1,16 +1,20 @@
 package com.scan_and_dine.backend.config;
 
-import org.mindrot.jbcrypt.BCrypt;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class PasswordConfig {
     
+    private final PasswordEncoder passwordEncoder;
+    
     public String hashPassword(String plainPassword) {
-        return BCrypt.hashpw(plainPassword, BCrypt.gensalt());
+        return passwordEncoder.encode(plainPassword);
     }
     
     public boolean verifyPassword(String plainPassword, String hashedPassword) {
-        return BCrypt.checkpw(plainPassword, hashedPassword);
+        return passwordEncoder.matches(plainPassword, hashedPassword);
     }
 }

@@ -9,6 +9,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -23,22 +25,26 @@ public class User {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, columnDefinition = "VARCHAR(50)")
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @NotBlank(message = "Username is required")
     @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
     private String username;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, columnDefinition = "VARCHAR(255)")
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Email(message = "Email should be valid")
     @NotBlank(message = "Email is required")
     private String email;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     @NotBlank(message = "Password is required")
     @Size(min = 6, message = "Password must be at least 6 characters")
     private String password;
 
-    @Column(name = "phone_number")
+    @Column(name = "phone_number", columnDefinition = "VARCHAR(15)")
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Size(max = 15, message = "Phone number cannot exceed 15 characters")
     private String phoneNumber;
 

@@ -19,10 +19,8 @@ public class ErrorConfig {
             public Map<String, Object> getErrorAttributes(WebRequest webRequest, ErrorAttributeOptions options) {
                 Map<String, Object> errorAttributes = super.getErrorAttributes(webRequest, options);
                 
-                // Replace timestamp with LocalDateTime format
                 errorAttributes.put("timestamp", LocalDateTime.now());
                 
-                // Ensure we have proper error message for 404
                 Integer status = (Integer) errorAttributes.get("status");
                 if (status != null && status == 404) {
                     String path = (String) errorAttributes.get("path");
@@ -30,7 +28,6 @@ public class ErrorConfig {
                     errorAttributes.put("error", "Not Found");
                 }
                 
-                // Remove unnecessary fields
                 errorAttributes.remove("trace");
                 errorAttributes.remove("exception");
                 
@@ -38,4 +35,4 @@ public class ErrorConfig {
             }
         };
     }
-} 
+}

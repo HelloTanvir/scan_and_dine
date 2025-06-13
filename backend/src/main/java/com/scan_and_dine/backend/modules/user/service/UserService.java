@@ -81,7 +81,9 @@ public class UserService {
 
     private Page<UserResponseDto> findUsersWithFilters(String username, String email, User.UserRole role,
                                                       User.UserStatus status, Pageable pageable) {
-        return userRepository.findUsersWithFilters(username, email, role, status, pageable)
+        String roleStr = role != null ? role.name() : null;
+        String statusStr = status != null ? status.name() : null;
+        return userRepository.findUsersWithFilters(username, email, roleStr, statusStr, pageable)
                 .map(userMapper::toResponseDto);
     }
 

@@ -22,14 +22,15 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     
     boolean existsByEmail(String email);
     
-    @Query("SELECT u FROM User u WHERE " +
-           "(:username IS NULL OR LOWER(u.username) LIKE LOWER(CONCAT('%', :username, '%'))) AND " +
-           "(:email IS NULL OR LOWER(u.email) LIKE LOWER(CONCAT('%', :email, '%'))) AND " +
+    @Query(value = "SELECT * FROM users u WHERE " +
+           "(:username IS NULL OR UPPER(u.username) ILIKE UPPER('%' || :username || '%')) AND " +
+           "(:email IS NULL OR UPPER(u.email) ILIKE UPPER('%' || :email || '%')) AND " +
            "(:role IS NULL OR u.role = :role) AND " +
-           "(:status IS NULL OR u.status = :status)")
+           "(:status IS NULL OR u.status = :status)",
+           nativeQuery = true)
     Page<User> findUsersWithFilters(@Param("username") String username,
                                    @Param("email") String email,
-                                   @Param("role") User.UserRole role,
-                                   @Param("status") User.UserStatus status,
+                                   @Param("role") String role,
+                                   @Param("status") String status,
                                    Pageable pageable);
 } 
