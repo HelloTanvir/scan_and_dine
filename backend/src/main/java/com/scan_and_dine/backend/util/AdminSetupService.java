@@ -5,12 +5,14 @@ import com.scan_and_dine.backend.modules.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Order(1) // Run first
 public class AdminSetupService implements CommandLineRunner {
 
     private final UserRepository userRepository;
