@@ -119,7 +119,13 @@ export default function CustomerOrderPage() {
     name: string; 
     phone: string; 
     email?: string; 
-    instructions?: string; 
+    instructions?: string;
+    paymentData: {
+      cardNumber: string;
+      expiryDate: string;
+      cvv: string;
+      cardName: string;
+    };
   }) => {
     if (!tableId) {
       alert("Table ID is missing. Please scan the QR code again.");
