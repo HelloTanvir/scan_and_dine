@@ -21,6 +21,7 @@ import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWrite
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
+import org.springframework.http.HttpMethod;
 
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -78,6 +79,14 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/error").permitAll()
                 .requestMatchers("/actuator/health").permitAll() // Health check endpoint
+                .requestMatchers(HttpMethod.POST, "/api/orders").permitAll() // Allow order creation without authentication
+                .requestMatchers(HttpMethod.GET, "/api/menu/**").permitAll() // Allow public access to menu for customers
+                .requestMatchers(HttpMethod.GET, "/api/tables/{id}").permitAll() // Allow customers to get table details for QR codes
+                .requestMatchers(HttpMethod.GET, "/api/orders/kitchen/**").authenticated() // Kitchen endpoints require authentication
+                .requestMatchers(HttpMethod.GET, "/api/orders/{id}").authenticated() // Order details require authentication
+                .requestMatchers(HttpMethod.GET, "/api/orders/table/**").authenticated() // Table orders require authentication
+                .requestMatchers(HttpMethod.PATCH, "/api/orders/*/status").authenticated() // Order status updates require authentication
+                .requestMatchers(HttpMethod.GET, "/api/orders").authenticated() // List all orders requires authentication
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session

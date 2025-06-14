@@ -10,11 +10,11 @@ import { LoadingSpinner } from '@/components/common/loading-spinner';
 import { StatsCard } from '@/features/dashboard/components/stats-card';
 import { OrderCard } from '@/features/kitchen/components/order-card';
 import { useKitchenManagement } from '@/features/kitchen/hooks/use-kitchen';
-import { Order, OrderStatus } from '@/lib/types';
+import { Order } from '@/lib/types';
 import { Clock, CheckCircle2, AlertCircle, ArrowRight } from "lucide-react";
 
 function KitchenStats({ orders }: { orders: Order[] }) {
-  const getOrderCount = (status: OrderStatus) => 
+  const getOrderCount = (status: string) => 
     orders.filter(order => order.status === status).length;
 
   return (
@@ -158,7 +158,7 @@ function KitchenContent() {
                 <CardContent className="p-4">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <h3 className="font-semibold">{order.id}</h3>
+                      <h3 className="font-semibold">Order #{order.id.slice(-6)}</h3>
                       <span className="text-sm text-gray-500">Table {order.tableNumber}</span>
                     </div>
                     <div className="text-sm text-gray-600">
@@ -166,6 +166,9 @@ function KitchenContent() {
                     </div>
                     <div className="text-sm">
                       Status: <span className="font-medium">{order.status}</span>
+                    </div>
+                    <div className="text-sm font-medium">
+                      Total: ${order.total.toFixed(2)}
                     </div>
                   </div>
                 </CardContent>

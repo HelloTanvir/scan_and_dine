@@ -89,6 +89,7 @@ class AuthService {
     const permissions: Record<string, string[]> = {
       '/dashboard': ['ADMIN'],
       '/kitchen': ['ADMIN', 'MANAGER', 'STAFF'],
+      '/menu': ['ADMIN', 'MANAGER'],
       '/tables': ['ADMIN', 'MANAGER'],
       '/users': ['ADMIN'],
     };

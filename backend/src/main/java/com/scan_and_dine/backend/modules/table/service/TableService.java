@@ -167,7 +167,7 @@ public class TableService {
         log.info("Generating QR code for table ID: {}", id);
         
         Table table = findTableById(id);
-        String qrCodeData = String.format("http://localhost:3000/menu?table=%s", table.getNumber());
+        String qrCodeData = String.format("http://localhost:3000/order/menu?table=%s", table.getId());
         
         log.info("QR code generated successfully for table: {}", table.getNumber());
         return qrCodeData;

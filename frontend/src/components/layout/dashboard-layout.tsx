@@ -24,6 +24,7 @@ import {
   BarChart3,
   Table2,
   Users,
+  Menu as MenuIcon,
   LogOut,
   ChevronLeft,
   ChevronRight,
@@ -36,6 +37,7 @@ const iconMap = {
   BarChart3,
   Table2,
   Users,
+  MenuIcon,
 } as const;
 
 interface NavItemProps {

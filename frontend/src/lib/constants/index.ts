@@ -73,6 +73,11 @@ export const NAVIGATION_ITEMS = [
     icon: 'ChefHat',
   },
   {
+    name: 'Menu',
+    href: '/menu',
+    icon: 'MenuIcon',
+  },
+  {
     name: 'Tables',
     href: '/tables',
     icon: 'Table2',

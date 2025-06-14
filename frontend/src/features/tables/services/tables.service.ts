@@ -113,7 +113,7 @@ export class TablesService {
       const sessionId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
       
       // Create the menu URL with table number and session ID
-      const menuUrl = `${window.location.origin}/menu?table=${table.number}&session=${sessionId}&tableId=${tableId}`;
+      const menuUrl = `${window.location.origin}/order/menu?table=${table.number}&session=${sessionId}&tableId=${tableId}`;
       
       // Generate QR code as data URL
       const qrCodeDataUrl = await QRCode.toDataURL(menuUrl, {
@@ -142,7 +142,7 @@ export class TablesService {
       const sessionId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
       
       // Create the menu URL with table number and session ID
-      const menuUrl = `${window.location.origin}/menu?table=${table.number}&session=${sessionId}&tableId=${tableId}`;
+      const menuUrl = `${window.location.origin}/order/menu?table=${table.number}&session=${sessionId}&tableId=${tableId}`;
       
       // Generate QR code as data URL with higher resolution for download
       const qrCodeDataUrl = await QRCode.toDataURL(menuUrl, {
