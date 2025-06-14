@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { CreateOrderData, Order, CartItem, Menu } from "@/lib/types";
 import { orderService } from "../services/order.service";
 import { API_ENDPOINTS } from "@/lib/constants";
@@ -8,9 +8,14 @@ const CART_STORAGE_KEY = "scan_and_dine_cart";
 export function useCart() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState(Date.now());
+  const initializationRef = useRef(false);
 
   // Load cart from localStorage on mount
   useEffect(() => {
+    if (initializationRef.current) return;
+    initializationRef.current = true;
+    
     try {
       const savedCart = localStorage.getItem(CART_STORAGE_KEY);
       if (savedCart) {
@@ -21,6 +26,8 @@ export function useCart() {
       }
     } catch (error) {
       console.error("Failed to load cart from localStorage:", error);
+      // Clear corrupted cart data
+      localStorage.removeItem(CART_STORAGE_KEY);
     } finally {
       setIsLoaded(true);
     }
@@ -28,111 +35,181 @@ export function useCart() {
 
   // Save cart to localStorage whenever it changes (but only after initial load)
   useEffect(() => {
-    if (isLoaded) {
+    if (isLoaded && initializationRef.current) {
       try {
         localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cartItems));
+        setLastUpdate(Date.now());
       } catch (error) {
         console.error("Failed to save cart to localStorage:", error);
       }
     }
   }, [cartItems, isLoaded]);
 
-  const addToCart = (menuItem: Menu, quantity: number = 1, specialInstructions?: string) => {
+  // Force refresh function
+  const refreshCart = useCallback(() => {
+    try {
+      const savedCart = localStorage.getItem(CART_STORAGE_KEY);
+      if (savedCart) {
+        const parsedCart = JSON.parse(savedCart);
+        if (Array.isArray(parsedCart)) {
+          setCartItems(parsedCart);
+          setLastUpdate(Date.now());
+        }
+      }
+    } catch (error) {
+      console.error("Failed to refresh cart:", error);
+    }
+  }, []);
+
+  // Enhanced addToCart with immediate state update
+  const addToCart = useCallback((menuItem: Menu, quantity: number = 1, specialInstructions?: string) => {
     setCartItems(prev => {
       const existingItemIndex = prev.findIndex(item => 
         item.menuItem.id === menuItem.id && 
         item.specialInstructions === specialInstructions
       );
       
+      let newCart;
       if (existingItemIndex >= 0) {
         // Update existing item with same special instructions
-        return prev.map((item, index) =>
+        newCart = prev.map((item, index) =>
           index === existingItemIndex
             ? { ...item, quantity: item.quantity + quantity }
             : item
         );
+      } else {
+        // Add new item or item with different special instructions
+        newCart = [...prev, { menuItem, quantity, specialInstructions }];
       }
       
-      // Add new item or item with different special instructions
-      return [...prev, { menuItem, quantity, specialInstructions }];
+      // Immediate localStorage update for responsiveness
+      try {
+        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(newCart));
+      } catch (error) {
+        console.error("Failed to save cart immediately:", error);
+      }
+      
+      return newCart;
     });
-  };
+  }, []);
 
-  const updateCartItem = (menuItemId: string, quantity: number, specialInstructions?: string) => {
+  const updateCartItem = useCallback((menuItemId: string, quantity: number, specialInstructions?: string) => {
     if (quantity <= 0) {
       removeFromCart(menuItemId, specialInstructions);
       return;
     }
 
-    setCartItems(prev =>
-      prev.map(item =>
+    setCartItems(prev => {
+      const newCart = prev.map(item =>
         item.menuItem.id === menuItemId && item.specialInstructions === specialInstructions
           ? { ...item, quantity, specialInstructions }
           : item
-      )
-    );
-  };
+      );
+      
+      // Immediate localStorage update
+      try {
+        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(newCart));
+      } catch (error) {
+        console.error("Failed to save cart immediately:", error);
+      }
+      
+      return newCart;
+    });
+  }, []);
 
-  const removeFromCart = (menuItemId: string, specialInstructions?: string) => {
-    setCartItems(prev => prev.filter(item => 
-      !(item.menuItem.id === menuItemId && item.specialInstructions === specialInstructions)
-    ));
-  };
+  const removeFromCart = useCallback((menuItemId: string, specialInstructions?: string) => {
+    setCartItems(prev => {
+      const newCart = prev.filter(item => 
+        !(item.menuItem.id === menuItemId && item.specialInstructions === specialInstructions)
+      );
+      
+      // Immediate localStorage update
+      try {
+        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(newCart));
+      } catch (error) {
+        console.error("Failed to save cart immediately:", error);
+      }
+      
+      return newCart;
+    });
+  }, []);
 
-  const removeCartItemByIndex = (index: number) => {
-    setCartItems(prev => prev.filter((_, i) => i !== index));
-  };
+  const removeCartItemByIndex = useCallback((index: number) => {
+    setCartItems(prev => {
+      const newCart = prev.filter((_, i) => i !== index);
+      
+      // Immediate localStorage update
+      try {
+        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(newCart));
+      } catch (error) {
+        console.error("Failed to save cart immediately:", error);
+      }
+      
+      return newCart;
+    });
+  }, []);
 
-  const updateCartItemByIndex = (index: number, quantity: number, specialInstructions?: string) => {
+  const updateCartItemByIndex = useCallback((index: number, quantity: number, specialInstructions?: string) => {
     if (quantity <= 0) {
       removeCartItemByIndex(index);
       return;
     }
 
-    setCartItems(prev =>
-      prev.map((item, i) =>
+    setCartItems(prev => {
+      const newCart = prev.map((item, i) =>
         i === index
           ? { ...item, quantity, specialInstructions }
           : item
-      )
-    );
-  };
+      );
+      
+      // Immediate localStorage update
+      try {
+        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(newCart));
+      } catch (error) {
+        console.error("Failed to save cart immediately:", error);
+      }
+      
+      return newCart;
+    });
+  }, []);
 
-  const clearCart = () => {
+  const clearCart = useCallback(() => {
     setCartItems([]);
     try {
       localStorage.removeItem(CART_STORAGE_KEY);
+      setLastUpdate(Date.now());
     } catch (error) {
       console.error("Failed to clear cart from localStorage:", error);
     }
-  };
+  }, []);
 
-  const getCartTotal = () => {
+  // Memoized calculations for better performance
+  const getCartTotal = useCallback(() => {
     return cartItems.reduce((total, item) => total + (item.menuItem.price * item.quantity), 0);
-  };
+  }, [cartItems]);
 
-  const getCartItemCount = () => {
+  const getCartItemCount = useCallback(() => {
     return cartItems.reduce((count, item) => count + item.quantity, 0);
-  };
+  }, [cartItems]);
 
-  const getCartTax = (taxRate: number = 0.08) => {
+  const getCartTax = useCallback((taxRate: number = 0.08) => {
     return getCartTotal() * taxRate;
-  };
+  }, [getCartTotal]);
 
-  const getCartTotalWithTax = (taxRate: number = 0.08) => {
+  const getCartTotalWithTax = useCallback((taxRate: number = 0.08) => {
     return getCartTotal() + getCartTax(taxRate);
-  };
+  }, [getCartTotal, getCartTax]);
 
-  const isItemInCart = (menuItemId: string) => {
+  const isItemInCart = useCallback((menuItemId: string) => {
     return cartItems.some(item => item.menuItem.id === menuItemId);
-  };
+  }, [cartItems]);
 
-  const getItemQuantityInCart = (menuItemId: string) => {
+  const getItemQuantityInCart = useCallback((menuItemId: string) => {
     // Sum all quantities for this menu item (including different special instructions)
     return cartItems
       .filter(item => item.menuItem.id === menuItemId)
       .reduce((total, item) => total + item.quantity, 0);
-  };
+  }, [cartItems]);
 
   return {
     cartItems,
@@ -148,7 +225,9 @@ export function useCart() {
     getItemQuantityInCart,
     removeCartItemByIndex,
     updateCartItemByIndex,
+    refreshCart,
     isLoaded, // Expose this to know when cart is ready
+    lastUpdate, // For debugging and forcing re-renders if needed
   };
 }
 
