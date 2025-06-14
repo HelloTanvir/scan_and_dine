@@ -41,7 +41,7 @@ export function CheckoutDialog({
     instructions: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const { getCartTotal, getCartItemCount } = useCart();
+  const { getCartTotal, getCartItemCount, refreshCart } = useCart();
 
   useEffect(() => {
     const savedData = localStorage.getItem("customerData");
@@ -50,6 +50,12 @@ export function CheckoutDialog({
       setCustomerData(prev => ({ ...prev, ...parsed }));
     }
   }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      refreshCart();
+    }
+  }, [isOpen]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};

@@ -260,6 +260,8 @@ export function CartSummary({
     refreshCart,
     isLoaded
   } = useCart();
+
+  console.log('cartItems', cartItems);
   
   const [editingItem, setEditingItem] = useState<number | null>(null);
   const [editInstructions, setEditInstructions] = useState("");
@@ -272,6 +274,12 @@ export function CartSummary({
       lastCartItemsRef.current = cartItems;
     }
   }, [cartItems]);
+
+  useEffect(() => {
+    if (isOpen) {
+      refreshCart();
+    }
+  }, [isOpen]);
 
   // Memoized calculations
   const { subtotal, tax, total } = useMemo(() => {
@@ -411,7 +419,7 @@ export function CartSummary({
         
         <DialogFooter className="border-t pt-4">
           <Button variant="outline" onClick={onClose}>
-            Continue Shopping
+            Continue Ordering
           </Button>
           {cartItems.length > 0 && (
             <Button 

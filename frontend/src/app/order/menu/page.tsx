@@ -111,6 +111,10 @@ export default function CustomerOrderPage() {
     });
   };
 
+  const handleCartOpen = () => {
+    setIsCartOpen(true);
+  };
+
   const handleCheckout = async (customerData: { 
     name: string; 
     phone: string; 
@@ -190,7 +194,7 @@ export default function CustomerOrderPage() {
             </div>
             
             <Button
-              onClick={() => setIsCartOpen(true)}
+              onClick={handleCartOpen}
               className="relative bg-green-600 hover:bg-green-700 shadow-sm"
             >
               <ShoppingCart className="h-5 w-5 mr-2" />
@@ -239,7 +243,7 @@ export default function CustomerOrderPage() {
       <FixedCartButton
         itemCount={getCartItemCount()}
         total={getCartTotal()}
-        onClick={() => setIsCartOpen(true)}
+        onClick={handleCartOpen}
       />
 
       {/* Dialogs */}
